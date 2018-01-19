@@ -5,6 +5,16 @@ const User = require('../models/userModels');
 const { mysecret } = require('../../config');
 const SaltRounds = 11;
 
+// Borowed this from Auth project :)
+const sendUserError = (err, res) => {
+  res.status(STATUS_USER_ERROR);
+  if (err && err.message) {
+    res.json({ message: err.message, stack: err.stack });
+  } else {
+    res.json({ error: err });
+  }
+};
+
 const authenticate = (req, res, next) => {
   const token = req.get('Authorization');
   if (token) {
@@ -26,6 +36,14 @@ const encryptUserPW = (req, res, next) => {
   // TODO: Fill this middleware in with the Proper password encrypting, bcrypt.hash()
   // Once the password is encrypted using bcrypt you'll need to set a user obj on req.user with the encrypted PW
   // Once the user is set, call next and head back into the userController to save it to the DB
+  if (!password || !username) {
+    sendUserError('Password or Username incorrect', res);
+    return;
+  }
+  bcrypt.hash(password, SaltRounds, (err, pass) => {
+    req.password = pass;
+    next();
+  });
 };
 
 const compareUserPW = (req, res, next) => {
